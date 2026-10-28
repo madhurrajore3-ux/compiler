@@ -1,5 +1,8 @@
+
 #pragma once
 #include <string>
+
+using namespace std;
 
 enum class TokenType {
     NUMBER, IDENTIFIER,
@@ -14,11 +17,12 @@ enum class TokenType {
 class Token {
 private:
     TokenType type;
-    std::string value;
+    string value;
     int line;
+
 public:
-    Token(TokenType t, const std::string& v, int l) : type(t), value(v), line(l) {}
+    Token(TokenType t, const string& v, int l) : type(t), value(v), line(l) {}
     TokenType getType() const { return type; }
-    const std::string& getValue() const { return value; }
+    const string& getValue() const { return value; }
     int getLine() const { return line; }
 };

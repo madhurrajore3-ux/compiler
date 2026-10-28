@@ -1,30 +1,33 @@
+
 #pragma once
 #include <stdexcept>
 #include <string>
 
-// OOP: Inheritance from std::runtime_error, and a base class for our own hierarchy.
-class CompilerError : public std::runtime_error {
+using namespace std;
+
+// OOP: Inheritance from runtime_error, and a base class for our own hierarchy.
+class CompilerError : public runtime_error {
     int line;
 public:
-    CompilerError(const std::string& msg, int l) : std::runtime_error(msg), line(l) {}
+    CompilerError(const string& msg, int l) : runtime_error(msg), line(l) {}
     int getLine() const { return line; }
-    virtual std::string stage() const { return "Error"; }   // overridden below
+    virtual string stage() const { return "Error"; }
 };
 
 class LexerError : public CompilerError {
 public:
     using CompilerError::CompilerError;
-    std::string stage() const override { return "Lexer Error"; }
+    string stage() const override { return "Lexer Error"; }
 };
 
 class ParserError : public CompilerError {
 public:
     using CompilerError::CompilerError;
-    std::string stage() const override { return "Syntax Error"; }
+    string stage() const override { return "Syntax Error"; }
 };
 
 class RuntimeError : public CompilerError {
 public:
     using CompilerError::CompilerError;
-    std::string stage() const override { return "Runtime Error"; }
+    string stage() const override { return "Runtime Error"; }
 };

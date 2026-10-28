@@ -1,17 +1,20 @@
+
 #pragma once
 #include <vector>
 #include "Token.h"
 #include "AST.h"
 
+using namespace std;
+
 class Parser {
 private:
-    std::vector<Token> tokens;
+    vector<Token> tokens;
     size_t pos = 0;
 
     const Token& peek() const;
-    const Token& advance();
+    const Token& advance() const;
     bool match(TokenType type);
-    const Token& expect(TokenType type, const std::string& what);
+    const Token& expect(TokenType type, const string& what);
 
     // Grammar rules, one function each (recursive descent)
     StmtPtr parseStatement();
@@ -20,7 +23,8 @@ private:
     ExprPtr parseAdditive();       // + -
     ExprPtr parseTerm();           // * /
     ExprPtr parseFactor();         // number, variable, ( expr ), -factor
+
 public:
-    explicit Parser(std::vector<Token> t) : tokens(std::move(t)) {}
-    std::unique_ptr<BlockStmt> parseProgram();
+    explicit Parser(vector<Token> t) : tokens(move(t)) {}
+    unique_ptr<BlockStmt> parseProgram();
 };

@@ -1,3 +1,4 @@
+
 #pragma once
 #include <memory>
 #include <vector>
@@ -6,14 +7,16 @@
 #include "SymbolTable.h"
 #include "Errors.h"
 
+using namespace std;
+
 // Helper for code generation: hands out fresh temp names (t1, t2...) and labels (L1, L2...)
 struct CodeGen {
-    std::ostream& out;
+    ostream& out;
     int tempCount = 0;
     int labelCount = 0;
-    explicit CodeGen(std::ostream& o) : out(o) {}
-    std::string newTemp()  { return "t" + std::to_string(++tempCount); }
-    std::string newLabel() { return "L" + std::to_string(++labelCount); }
+    explicit CodeGen(ostream& o) : out(o) {}
+    string newTemp()  { return "t" + to_string(++tempCount); }
+    string newLabel() { return "L" + to_string(++labelCount); }
 };
 
 // ---------- Base classes ----------
@@ -25,8 +28,8 @@ public:
 
 class Expr : public ASTNode {
 public:
-    virtual int evaluate(SymbolTable& table) = 0;            // interpreter
-    virtual std::string generate(CodeGen& gen) = 0;          // compiler (returns temp/var name)
+    virtual int evaluate(SymbolTable& table) = 0;
+    virtual string generate(CodeGen& gen) = 0;
 };
 
 class Stmt : public ASTNode {
@@ -35,8 +38,8 @@ public:
     virtual void generate(CodeGen& gen) = 0;
 };
 
-using ExprPtr = std::unique_ptr<Expr>;   // smart pointer: memory freed automatically (RAII)
-using StmtPtr = std::unique_ptr<Stmt>;
+using ExprPtr = unique_ptr<Expr>;
+using StmtPtr = unique_ptr<Stmt>;
 
 // ---------- Expressions ----------
 class NumberExpr : public Expr {
@@ -44,27 +47,31 @@ class NumberExpr : public Expr {
 public:
     explicit NumberExpr(int v) : value(v) {}
     int evaluate(SymbolTable&) override { return value; }
-    std::string generate(CodeGen&) override { return std::to_string(value); }
+    string generate(CodeGen&) override { return to_string(value); }
 };
 
 class VariableExpr : public Expr {
-    std::string name; int line;
+    string name;
+    int line;
 public:
-    VariableExpr(const std::string& n, int l) : name(n), line(l) {}
+    VariableExpr(const string& n, int l) : name(n), line(l) {}
     int evaluate(SymbolTable& table) override { return table.get(name, line); }
-    std::string generate(CodeGen&) override { return name; }
+    string generate(CodeGen&) override { return name; }
 };
 
 class BinaryExpr : public Expr {
-    ExprPtr left; std::string op; ExprPtr right; int line;
+    ExprPtr left;
+    string op;
+    ExprPtr right;
+    int line;
 public:
-    BinaryExpr(ExprPtr l, const std::string& o, ExprPtr r, int ln)
-        : left(std::move(l)), op(o), right(std::move(r)), line(ln) {}
+    BinaryExpr(ExprPtr l, const string& o, ExprPtr r, int ln)
+        : left(move(l)), op(o), right(move(r)), line(ln) {}
 
-    // OOP: Polymorphism. left->evaluate() calls the correct derived version at runtime.
     int evaluate(SymbolTable& table) override {
         int a = left->evaluate(table);
         int b = right->evaluate(table);
+
         if (op == "+") return a + b;
         if (op == "-") return a - b;
         if (op == "*") return a * b;
@@ -76,13 +83,14 @@ public:
         if (op == ">")  return a > b;
         if (op == "==") return a == b;
         if (op == "!=") return a != b;
+
         throw RuntimeError("Unknown operator " + op, line);
     }
 
-    std::string generate(CodeGen& gen) override {
-        std::string a = left->generate(gen);
-        std::string b = right->generate(gen);
-        std::string t = gen.newTemp();
+    string generate(CodeGen& gen) override {
+        string a = left->generate(gen);
+        string b = right->generate(gen);
+        string t = gen.newTemp();
         gen.out << t << " = " << a << " " << op << " " << b << "\n";
         return t;
     }
@@ -90,10 +98,13 @@ public:
 
 // ---------- Statements ----------
 class AssignStmt : public Stmt {
-    std::string name; ExprPtr value;
+    string name;
+    ExprPtr value;
 public:
-    AssignStmt(const std::string& n, ExprPtr v) : name(n), value(std::move(v)) {}
-    void execute(SymbolTable& table) override { table.set(name, value->evaluate(table)); }
+    AssignStmt(const string& n, ExprPtr v) : name(n), value(move(v)) {}
+    void execute(SymbolTable& table) override {
+        table.set(name, value->evaluate(table));
+    }
     void generate(CodeGen& gen) override {
         gen.out << name << " = " << value->generate(gen) << "\n";
     }
@@ -102,51 +113,75 @@ public:
 class PrintStmt : public Stmt {
     ExprPtr value;
 public:
-    explicit PrintStmt(ExprPtr v) : value(std::move(v)) {}
-    void execute(SymbolTable& table) override { std::cout << value->evaluate(table) << "\n"; }
-    void generate(CodeGen& gen) override { gen.out << "print " << value->generate(gen) << "\n"; }
+    explicit PrintStmt(ExprPtr v) : value(move(v)) {}
+    void execute(SymbolTable& table) override {
+        cout << value->evaluate(table) << "\n";
+    }
+    void generate(CodeGen& gen) override {
+        gen.out << "print " << value->generate(gen) << "\n";
+    }
 };
 
 class BlockStmt : public Stmt {
-    std::vector<StmtPtr> statements;
+    vector<StmtPtr> statements;
 public:
-    void add(StmtPtr s) { statements.push_back(std::move(s)); }
-    void execute(SymbolTable& table) override { for (auto& s : statements) s->execute(table); }
-    void generate(CodeGen& gen) override { for (auto& s : statements) s->generate(gen); }
+    void add(StmtPtr s) { statements.push_back(move(s)); }
+    void execute(SymbolTable& table) override {
+        for (auto& s : statements) s->execute(table);
+    }
+    void generate(CodeGen& gen) override {
+        for (auto& s : statements) s->generate(gen);
+    }
 };
 
 class IfStmt : public Stmt {
-    ExprPtr condition; StmtPtr thenBlock; StmtPtr elseBlock;   // elseBlock may be null
+    ExprPtr condition;
+    StmtPtr thenBlock;
+    StmtPtr elseBlock;
 public:
     IfStmt(ExprPtr c, StmtPtr t, StmtPtr e)
-        : condition(std::move(c)), thenBlock(std::move(t)), elseBlock(std::move(e)) {}
+        : condition(move(c)), thenBlock(move(t)), elseBlock(move(e)) {}
+
     void execute(SymbolTable& table) override {
-        if (condition->evaluate(table)) thenBlock->execute(table);
-        else if (elseBlock) elseBlock->execute(table);
+        if (condition->evaluate(table))
+            thenBlock->execute(table);
+        else if (elseBlock)
+            elseBlock->execute(table);
     }
+
     void generate(CodeGen& gen) override {
-        std::string elseL = gen.newLabel(), endL = gen.newLabel();
-        std::string c = condition->generate(gen);
+        string elseL = gen.newLabel(), endL = gen.newLabel();
+        string c = condition->generate(gen);
+
         gen.out << "ifFalse " << c << " goto " << elseL << "\n";
         thenBlock->generate(gen);
         gen.out << "goto " << endL << "\n" << elseL << ":\n";
+
         if (elseBlock) elseBlock->generate(gen);
+
         gen.out << endL << ":\n";
     }
 };
 
 class WhileStmt : public Stmt {
-    ExprPtr condition; StmtPtr body;
+    ExprPtr condition;
+    StmtPtr body;
 public:
-    WhileStmt(ExprPtr c, StmtPtr b) : condition(std::move(c)), body(std::move(b)) {}
+    WhileStmt(ExprPtr c, StmtPtr b)
+        : condition(move(c)), body(move(b)) {}
+
     void execute(SymbolTable& table) override {
-        while (condition->evaluate(table)) body->execute(table);
+        while (condition->evaluate(table))
+            body->execute(table);
     }
+
     void generate(CodeGen& gen) override {
-        std::string startL = gen.newLabel(), endL = gen.newLabel();
+        string startL = gen.newLabel(), endL = gen.newLabel();
+
         gen.out << startL << ":\n";
-        std::string c = condition->generate(gen);
+        string c = condition->generate(gen);
         gen.out << "ifFalse " << c << " goto " << endL << "\n";
+
         body->generate(gen);
         gen.out << "goto " << startL << "\n" << endL << ":\n";
     }

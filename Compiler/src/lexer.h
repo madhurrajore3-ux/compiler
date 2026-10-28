@@ -1,12 +1,15 @@
+
 #pragma once
 #include <string>
 #include <vector>
 #include "Token.h"
 
+using namespace std;
+
 // OOP: Abstraction. Outside world only calls tokenize(); how it works is hidden.
 class Lexer {
 private:
-    std::string source;
+    string source;
     size_t pos = 0;
     int line = 1;
 
@@ -15,7 +18,8 @@ private:
     void skipWhitespace();
     Token readNumber();
     Token readIdentifier();
+
 public:
-    explicit Lexer(const std::string& src) : source(src) {}
-    std::vector<Token> tokenize();
+    explicit Lexer(const string& src) : source(src) {}
+    vector<Token> tokenize();
 };

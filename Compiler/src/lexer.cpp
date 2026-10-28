@@ -1,26 +1,29 @@
+
 #include "Lexer.h"
 #include "Errors.h"
 #include <cctype>
+
+using namespace std;
 
 char Lexer::peek() const { return pos < source.size() ? source[pos] : '\0'; }
 char Lexer::advance() { return source[pos++]; }
 
 void Lexer::skipWhitespace() {
-    while (std::isspace(peek())) {
+    while (isspace(peek())) {
         if (peek() == '\n') line++;
         advance();
     }
 }
 
 Token Lexer::readNumber() {
-    std::string num;
-    while (std::isdigit(peek())) num += advance();
+    string num;
+    while (isdigit(peek())) num += advance();
     return Token(TokenType::NUMBER, num, line);
 }
 
 Token Lexer::readIdentifier() {
-    std::string word;
-    while (std::isalnum(peek()) || peek() == '_') word += advance();
+    string word;
+    while (isalnum(peek()) || peek() == '_') word += advance();
     if (word == "let")   return Token(TokenType::LET, word, line);
     if (word == "print") return Token(TokenType::PRINT, word, line);
     if (word == "if")    return Token(TokenType::IF, word, line);
@@ -29,15 +32,15 @@ Token Lexer::readIdentifier() {
     return Token(TokenType::IDENTIFIER, word, line);
 }
 
-std::vector<Token> Lexer::tokenize() {
-    std::vector<Token> tokens;
+vector<Token> Lexer::tokenize() {
+    vector<Token> tokens;
     while (true) {
         skipWhitespace();
         char c = peek();
         if (c == '\0') break;
 
-        if (std::isdigit(c)) { tokens.push_back(readNumber()); continue; }
-        if (std::isalpha(c) || c == '_') { tokens.push_back(readIdentifier()); continue; }
+        if (isdigit(c)) { tokens.push_back(readNumber()); continue; }
+        if (isalpha(c) || c == '_') { tokens.push_back(readIdentifier()); continue; }
 
         advance();
         switch (c) {
@@ -61,7 +64,7 @@ std::vector<Token> Lexer::tokenize() {
                 else throw LexerError("Unexpected character '!'", line);
                 break;
             default:
-                throw LexerError(std::string("Unexpected character '") + c + "'", line);
+                throw LexerError(string("Unexpected character '") + c + "'", line);
         }
     }
     tokens.emplace_back(TokenType::END_OF_FILE, "", line);
